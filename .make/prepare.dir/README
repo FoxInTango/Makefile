@@ -1,0 +1,52 @@
+# How to add a depended-project hosted by Makefile-System for this project?
+  1,Create a file named as ${depended_project_name}.dep
+  2,Add the contents below to that file with the variables be filled as needed.
+        ${depended_project_name}
+        ${depended_project_name_url}
+        ${where_download_to}
+
+REPARE_TARGETS += preapre.${depended_project_name}
+PREPARE_URL_${depended_project_name} = ${depended_project_url}
+PREPARE_DIR_${depended_project_name} = ${where_download_to}/$(basename $(notdir $(PREPARE_URL_${depended_project_name})))
+preapre.${depended_project_name}:
+	-git clone $(PREPARE_URL_${depended_project_name}) $(PREPARE_DIR_${depended_project_name})
+	-echo "SUPER_MAKE_DIR=${MAKE_FILE_DIR}"                >> $(PREPARE_DIR_${depended_project_name})/.make/super
+	-echo "SUPER_MAKE_CONFIG_DIR=${MAKE_CONFIG_DIR}"       >> $(PREPARE_DIR_${depended_project_name})/.make/super
+	-cd $(PREPARE_DIR_${depended_project_name}) && $(MAKE) prepare
+	-rm $(PREPARE_DIR_${depended_project_name})/.make/super
+
+# How to add a depended-porject not hosted by Makefile-System for this project?
+  1,Create a file named as ${depended_project_name}.dep
+  2,Add the contents below to that file with the variables be filled as needed.
+        ${depended_project_namev}
+        ${depended_project_name_url}
+        ${where_download_to}
+
+PREPARE_TARGETS += prepare.${depended_project_name}
+PREPARE_URL_${depended_project_name} = ${depended_project_url}
+PREPARE_DIR_${depended_project_name} = $(DEPENDS_THIRD_PATH)/$(basename $(notdir $(PREPARE_URL_${depended_project_name})))
+prepare.${depended_project_name}:
+	-git clone https://github.com/FoxInTango/Makefile.git     $(PREPARE_DIR_pugixml) 
+	-git clone $(PREPARE_URL_${depended_project_name})        $(PREPARE_DIR_${depended_project_name})/${depended_project_name}
+	-echo "SUPER_MAKE_DIR=${MAKE_FILE_DIR}"                >> $(PREPARE_DIR_${depended_project_name})/.make/super
+	-echo "SUPER_MAKE_CONFIG_DIR=${MAKE_CONFIG_DIR}"       >> $(PREPARE_DIR_${depended_project_name})/.make/super
+ifneq ($(wildcard $(PREPARE_DIR_${depended_project_name})/.make/third),)
+	-rm $(PREPARE_DIR_${depended_project_name})/.make/third
+endif
+	-echo "TARGET_NAME=${depended_project_name}"                                                                                          >> $(PREPARE_DIR_${depended_project_name})/.make/third
+	-echo "THIRD_TARGETS:"                                                                                                                >> $(PREPARE_DIR_pugixml)/.make/third
+#[NOTICE 1]
+	-echo "	mkdir $(PREPARE_DIR_${depended_project_name})/build ;\  
+                cd $(PREPARE_DIR_${depended_project_name})/build   &&\ 
+                cmake ../${depended_project_name} -DBUILD_SHARED_LIBS=on && make"                                                             >> $(PREPARE_DIR_${depended_project_name})/.make/third
+	-echo "	-cp $(PREPARE_DIR_${depended_project_name})/build/lib* $(PREPARE_DIR_${depended_project_name})/lib"                           >> $(PREPARE_DIR_${depended_project_name})/.make/third
+	-echo "	-cp $(PREPARE_DIR_${depended_project_name})/${depended_project_name}/src/*.hpp  $(PREPARE_DIR_${depended_project_name})/inc"  >> $(PREPARE_DIR_${depended_project_name})/.make/third
+	-cd $(PREPARE_DIR_${depended_project_name}) && make prepare
+	-rm $(PREPARE_DIR_${depended_project_name})/.make/super
+
+#[NOTICE 1]:
+    Here it means making a dir named as 'build' for building the third-party project.
+    Then cd into git and configure it as the third-party project need.The process should be rewrite as needed by the third-party project.
+    Once the build-process completed,copy the outputs to the header dir , library dir and binary dir.
+    
+
